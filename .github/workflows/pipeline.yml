@@ -1,0 +1,35 @@
+name: orchard-pipeline   # innocuous name on purpose
+
+on:
+  repository_dispatch:
+    types: [generate_pdf, deliver_pdf]
+  schedule:
+    - cron: "0 * * * *"   # hourly: delete PDFs 24h after first download
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Route event
+        env:
+          SB_USERS1_URL: ${{ secrets.SB_USERS1_URL }}
+          SB_USERS1_SERVICE_KEY: ${{ secrets.SB_USERS1_SERVICE_KEY }}
+          SB_KEYS_URL: ${{ secrets.SB_KEYS_URL }}
+          SB_KEYS_SERVICE_KEY: ${{ secrets.SB_KEYS_SERVICE_KEY }}
+          SB_LIBRARIES_JSON: ${{ secrets.SB_LIBRARIES_JSON }}
+          SB_PDF_BUCKETS_JSON: ${{ secrets.SB_PDF_BUCKETS_JSON }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EVENT_TYPE: ${{ github.event.action || 'cleanup' }}
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: python main.py
