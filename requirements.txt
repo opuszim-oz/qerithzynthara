@@ -1,1 +1,5 @@
-
+requests
+reportlab
+pypdf
+Pillow
+supabase
